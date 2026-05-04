@@ -37,8 +37,7 @@ def run_paper1_experiment(dataset_name: str = "adult_income") -> Dict:
     3. Find rationalizations that appear fair
     4. Detect fairwashing gap
     """
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print("PAPER 1: LaundryML - Fairwashing: The Risk of Rationalization")
     print("="*60)
 
@@ -113,8 +112,7 @@ def run_paper1_experiment(dataset_name: str = "adult_income") -> Dict:
         bb_preds, rl_preds, s_test
     )
 
-    print(f"
-Paper 1 Results:")
+    print(f"\nPaper 1 Results:")
     print(f"  Candidates generated: {metrics['n_candidates']}")
     print(f"  Best fidelity: {metrics['best_fidelity']:.3f}")
     print(f"  Best fairness violation: {metrics['best_fairness']:.3f}")
@@ -138,8 +136,7 @@ def run_paper2_experiment(dataset_name: str = "compas") -> Dict:
     3. Show LIME/SHAP are fooled
     4. Demonstrate OOD detection
     """
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print("PAPER 2: Fooling LIME and SHAP")
     print("="*60)
 
@@ -177,8 +174,7 @@ def run_paper2_experiment(dataset_name: str = "compas") -> Dict:
         save_prefix="paper2"
     )
 
-    print(f"
-Paper 2 Results:")
+    print(f"\nPaper 2 Results:")
     print(f"  Fidelity: {results['fidelity']:.3f}")
     print(f"  Decoy features: {results['n_decoy_features']}")
     print(f"  LIME fooled: {metrics['lime_fooled']}")
@@ -200,8 +196,7 @@ def run_paper3_experiment(dataset_name: str = "fashion_mnist") -> Dict:
     3. Evaluate explanation manipulation
     4. Test TSP defense
     """
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print("PAPER 3: Fairwashing with Off-Manifold Detergent")
     print("="*60)
 
@@ -273,8 +268,7 @@ def run_paper3_experiment(dataset_name: str = "fashion_mnist") -> Dict:
         history, eval_results, save_prefix="paper3"
     )
 
-    print(f"
-Paper 3 Results:")
+    print(f"\nPaper 3 Results:")
     print(f"  Final output loss: {history[-1]['output_loss']:.4f}")
     print(f"  Final explanation loss: {history[-1]['explanation_loss']:.4f}")
     print(f"  Test output MSE: {eval_results['output_mse']:.4f}")
@@ -296,8 +290,7 @@ def run_paper4_experiment(dataset_name: str = "mnist") -> Dict:
     2. Apply top-k, mass-center, and random attacks
     3. Measure explanation fragility
     """
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print("PAPER 4: Interpretation of Neural Networks is Fragile")
     print("="*60)
 
@@ -375,8 +368,7 @@ def run_paper4_experiment(dataset_name: str = "mnist") -> Dict:
         save_prefix="paper4"
     )
 
-    print(f"
-Paper 4 Results:")
+    print(f"\nPaper 4 Results:")
     print(f"  Random - Spearman: {random_metrics['spearman_correlation']:.3f}")
     print(f"  Random - Top-k intersection: {random_metrics['top_k_intersection']:.3f}")
     print(f"  Top-k attack - Spearman: {topk_metrics['spearman_correlation']:.3f}")
@@ -395,8 +387,7 @@ def run_detection_experiment() -> Dict:
     """
     Run detection experiments across all papers.
     """
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print("DETECTION MODULE")
     print("="*60)
 
@@ -427,8 +418,7 @@ def run_detection_experiment() -> Dict:
         explanation_methods=["gradient", "xgrad"]
     )
 
-    print(f"
-Detection Results:")
+    print(f"\nDetection Results:")
     print(f"  Ensemble score: {detection_results['ensemble_score']:.3f}")
     print(f"  Fairwashing detected: {detection_results['fairwashing_detected']}")
 
@@ -479,8 +469,7 @@ def main():
     evaluator = ExperimentEvaluator(save_dir=args.output)
     summary = evaluator.generate_summary_report(all_results)
 
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print(summary)
     print("="*60)
 
@@ -488,8 +477,7 @@ def main():
     with open(f"{args.output}/summary.txt", "w") as f:
         f.write(summary)
 
-    print(f"
-Results saved to {args.output}/")
+    print(f"\nResults saved to {args.output}/")
 
 
 if __name__ == "__main__":

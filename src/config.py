@@ -5,6 +5,12 @@ Contains all hyperparameters and settings for the four papers.
 
 import torch
 
+__all__ = [
+    "RANDOM_SEED", "DEVICE",
+    "PAPER1_CONFIG", "PAPER2_CONFIG", "PAPER3_CONFIG", "PAPER4_CONFIG",
+    "DETECTION_CONFIG", "MODEL_CONFIGS",
+]
+
 # General settings
 RANDOM_SEED = 42
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

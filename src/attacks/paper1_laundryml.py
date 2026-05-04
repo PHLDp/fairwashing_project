@@ -66,7 +66,7 @@ class RuleList:
             elif "==" in condition:
                 parts = condition.split("==")
                 feature = parts[0].strip()
-                value = parts[1].strip().strip("'"")
+                value = parts[1].strip().strip("'")
                 return str(x[feature]) == value
         except:
             return False

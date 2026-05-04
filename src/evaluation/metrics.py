@@ -5,7 +5,7 @@ Evaluation metrics and visualization for fairwashing experiments.
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import torch
 
 
@@ -248,15 +248,12 @@ class ExperimentEvaluator:
         report.append("")
 
         for paper, results in all_results.items():
-            report.append(f"
-{paper.upper()}")
+            report.append(f"\n{paper.upper()}")
             report.append("-" * 40)
             for key, value in results.items():
                 if isinstance(value, (int, float, bool, str)):
                     report.append(f"  {key}: {value}")
 
-        report.append("
-" + "=" * 60)
+        report.append("\n" + "=" * 60)
 
-        return "
-".join(report)
+        return "\n".join(report)
