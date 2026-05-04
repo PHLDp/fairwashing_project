@@ -23,13 +23,16 @@ from src.detection.detector import LIMESHAPFoolingDetector
 from src.evaluation.metrics import ExperimentEvaluator
 
 
-def run_experiment(dataset_name="compas", n_decoy=2):
+def run_experiment(dataset_name="adult_income", n_decoy=2):
     """Run complete Paper 2 experiment."""
     print(f"\n{'='*60}")
     print(f"Paper 2: Fooling LIME and SHAP - {dataset_name}")
     print(f"{'='*60}")
 
     set_seed(RANDOM_SEED)
+
+    # Ensure results directory exists
+    os.makedirs("results", exist_ok=True)
 
     # Load data
     train_loader, test_loader, metadata = get_tabular_loaders(dataset_name, batch_size=256)
@@ -153,7 +156,7 @@ def run_experiment(dataset_name="compas", n_decoy=2):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="compas")
+    parser.add_argument("--dataset", default="adult_income")
     parser.add_argument("--n_decoy", type=int, default=2)
     args = parser.parse_args()
 

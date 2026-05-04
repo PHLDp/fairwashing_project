@@ -69,9 +69,13 @@ class ExperimentEvaluator:
             "n_decoy_features": lime_result.get("n_decoy_features", 0) if lime_result else 0,
         }
 
-        # Plot explanation comparison if available
+        # Plot LIME explanation comparison if available
         if lime_result and "explanation" in lime_result:
             self._plot_lime_explanation(lime_result, save_prefix)
+
+        # Plot SHAP explanation if available
+        if shap_result and "shap_values" in shap_result:
+            self._plot_shap_explanation(shap_result, save_prefix)
 
         return metrics
 
@@ -237,6 +241,42 @@ class ExperimentEvaluator:
         plt.title("LIME Explanation (Red = Decoy Features)")
         plt.tight_layout()
         plt.savefig(f"{self.save_dir}/{save_prefix}_lime.png", dpi=150)
+        plt.close()
+
+    def _plot_shap_explanation(self, shap_result: Dict, save_prefix):
+        """Plot SHAP values."""
+        shap_values = shap_result.get("shap_values", None)
+        if shap_values is None:
+            return
+
+        # shap_values can be a list (one per class) or an array
+        if isinstance(shap_values, list):
+            # Use class 1 values for binary classification
+            vals = np.array(shap_values[1]).flatten() if len(shap_values) > 1 else np.array(shap_values[0]).flatten()
+        else:
+            vals = np.array(shap_values).flatten()
+
+        n_features = shap_result.get("n_features", len(vals))
+        n_decoy = shap_result.get("n_decoy", 0)
+
+        # Create feature labels
+        feature_labels = [f"feature_{i}" for i in range(n_features - n_decoy)]
+        feature_labels += [f"decoy_{i}" for i in range(n_decoy)]
+
+        # Sort by absolute SHAP value
+        sorted_idx = np.argsort(np.abs(vals))[::-1][:20]  # Top 20
+        sorted_vals = vals[sorted_idx]
+        sorted_labels = [feature_labels[i] if i < len(feature_labels) else f"feature_{i}"
+                         for i in sorted_idx]
+
+        plt.figure(figsize=(10, 6))
+        colors = ['red' if 'decoy' in str(l) else 'steelblue' for l in sorted_labels]
+        plt.barh(range(len(sorted_labels)), sorted_vals, color=colors)
+        plt.yticks(range(len(sorted_labels)), sorted_labels)
+        plt.xlabel("SHAP Value")
+        plt.title("SHAP Feature Attribution (Red = Decoy Features)")
+        plt.tight_layout()
+        plt.savefig(f"{self.save_dir}/{save_prefix}_shap.png", dpi=150)
         plt.close()
 
     def generate_summary_report(self, all_results: Dict) -> str:

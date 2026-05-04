@@ -26,7 +26,7 @@ def create_fairwashed_tabular_model(original_model, X_train, n_epochs=10):
     """Create a fairwashed version of a tabular model."""
     # Clone architecture
     fairwashed = TabularClassifier(
-        input_dim=original_model.network[0].in_features,
+        input_dim=original_model.fc.in_features,
         hidden_dims=[64, 32],
         num_classes=2
     ).to(DEVICE)
@@ -82,6 +82,9 @@ def run_tabular_detection_experiment(dataset_name="german_credit"):
     print(f"{'='*60}")
 
     set_seed(RANDOM_SEED)
+
+    # Ensure results directory exists
+    os.makedirs("results", exist_ok=True)
 
     # Load data
     train_loader, test_loader, metadata = get_tabular_loaders(dataset_name, batch_size=128)
@@ -150,6 +153,9 @@ def run_image_detection_experiment(dataset_name="mnist"):
     print(f"{'='*60}")
 
     set_seed(RANDOM_SEED)
+
+    # Ensure results directory exists
+    os.makedirs("results", exist_ok=True)
 
     # Load data
     train_loader, test_loader = get_image_loaders(dataset_name, batch_size=128)
@@ -272,6 +278,55 @@ def run_comprehensive_detection_benchmark():
         plt.close()
 
         print(f"\nBenchmark plot saved to results/detection_benchmark.png")
+
+    # Generate summary.txt
+    print(f"\nGenerating summary report...")
+    summary_lines = []
+    summary_lines.append("=" * 60)
+    summary_lines.append("FAIRWASHING DETECTION FRAMEWORK - EXPERIMENT SUMMARY")
+    summary_lines.append("=" * 60)
+    summary_lines.append("")
+    summary_lines.append("This project implements and evaluates four fairwashing attack")
+    summary_lines.append("papers and a unified detection module.")
+    summary_lines.append("")
+    summary_lines.append("Papers:")
+    summary_lines.append("  1. LaundryML (Aivodji et al., 2019) - Rule list rationalization")
+    summary_lines.append("  2. Fooling LIME & SHAP (Slack et al., 2020) - Scaffolding attack")
+    summary_lines.append("  3. Off-Manifold Detergent (Anders et al., 2020) - Explanation manipulation")
+    summary_lines.append("  4. Fragile Interpretations (Ghorbani et al., 2019) - Adversarial perturbations")
+    summary_lines.append("")
+    summary_lines.append("-" * 40)
+    summary_lines.append("DETECTION BENCHMARK RESULTS")
+    summary_lines.append("-" * 40)
+    for scenario, result in results.items():
+        summary_lines.append(f"")
+        summary_lines.append(f"Scenario: {scenario}")
+        if "error" in result:
+            summary_lines.append(f"  Error: {result['error']}")
+        else:
+            summary_lines.append(f"  Ensemble Score: {result.get('ensemble_score', 'N/A')}")
+            summary_lines.append(f"  Fairwashing Detected: {result.get('fairwashing_detected', 'N/A')}")
+    summary_lines.append("")
+    summary_lines.append("-" * 40)
+    summary_lines.append("GENERATED OUTPUT FILES")
+    summary_lines.append("-" * 40)
+    summary_lines.append("  results/paper1_pareto.png         - Fidelity vs fairness Pareto plot")
+    summary_lines.append("  results/paper1_candidates.csv     - All candidate rule list metrics")
+    summary_lines.append("  results/paper2_lime.png           - LIME explanation comparison")
+    summary_lines.append("  results/paper2_shap.png           - SHAP feature attribution")
+    summary_lines.append("  results/paper4_comparison.png     - Original vs perturbed explanations")
+    summary_lines.append("  results/paper4_aggregate.png      - Aggregate attack metrics")
+    summary_lines.append("  results/detection_benchmark.png   - Detection scores across scenarios")
+    summary_lines.append("  results/summary.txt               - This summary file")
+    summary_lines.append("")
+    summary_lines.append("Note: Paper 3 (Off-Manifold Detergent) requires GPU and is skipped.")
+    summary_lines.append("=" * 60)
+
+    summary_text = "\n".join(summary_lines)
+    with open("results/summary.txt", "w") as f:
+        f.write(summary_text)
+    print(f"Summary saved to results/summary.txt")
+    print(summary_text)
 
     return results
 

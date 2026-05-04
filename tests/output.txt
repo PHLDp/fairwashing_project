@@ -1,0 +1,14 @@
+....F............
+======================================================================
+FAIL: test_demographic_parity (__main__.TestHelpers.test_demographic_parity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\ACADEMICS\Semester - 4\Academic Courses\fairwashing_project\tests\test_framework.py", line 36, in test_demographic_parity
+    self.assertAlmostEqual(dp, 1/3, places=5)
+AssertionError: np.float64(0.0) != 0.3333333333333333 within 5 places (np.float64(0.3333333333333333) difference)
+
+--------------------------------------------------------------------
+Ran 17 tests in 3.996s
+
+FAILED (failures=1)
+Using DecisionTree fallback for rule list enumeration.

@@ -13,7 +13,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="fairwashing-detection",
     version="1.0.0",
-    author="Vishnu",
+    author="Prahladha",
     description="Comprehensive framework for fairwashing detection and analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -22,7 +22,6 @@ setup(
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

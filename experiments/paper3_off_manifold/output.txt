@@ -1,0 +1,10 @@
+Paper 3 Off-Manifold experiment timed out after 10 minutes due to model training taking too long.
+
+The experiment requires:
+- Downloading MNIST/Fashion-MNIST dataset
+- Training teacher model
+- Training fairwashed student model
+- This takes significant time on CPU
+
+To run manually:
+  python experiments/paper3_off_manifold/run_experiment.py --dataset mnist --n_epochs 20

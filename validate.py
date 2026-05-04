@@ -213,10 +213,10 @@ def main():
 
     print("\n" + "="*60)
     if not all_errors:
-        print("✅ ALL TESTS PASSED!")
+        print(" ALL TESTS PASSED!")
         print("The framework is ready to use.")
     else:
-        print(f"⚠️  {len(all_errors)} ERROR(S) FOUND:")
+        print(f" {len(all_errors)} ERROR(S) FOUND:")
         for err in all_errors:
             print(f"  - {err}")
     print("="*60)

@@ -45,6 +45,9 @@ def run_experiment(dataset_name="adult_income", n_candidates=50):
 
     set_seed(RANDOM_SEED)
 
+    # Ensure results directory exists
+    os.makedirs("results", exist_ok=True)
+
     # Load data
     train_loader, test_loader, metadata = get_tabular_loaders(dataset_name, batch_size=256)
 
@@ -68,7 +71,7 @@ def run_experiment(dataset_name="adult_income", n_candidates=50):
     s_test = np.concatenate(s_test)
 
     print(f"Train: {X_train.shape}, Test: {X_test.shape}")
-    print(f"Sensitive attr distribution: {np.bincount(s_train)}")
+    print(f"Sensitive attr distribution: {np.bincount(s_train.astype(int))}")
 
     # Create biased black-box
     sensitive_idx = 0  # Assume first feature is sensitive after standardization
@@ -88,20 +91,22 @@ def run_experiment(dataset_name="adult_income", n_candidates=50):
     print(f"Black-box accuracy (train): {accuracy_score(y_train, bb_train_preds):.4f}")
     print(f"Black-box accuracy (test): {accuracy_score(y_test, bb_test_preds):.4f}")
 
-    # Create DataFrames
-    feature_names = [f"f{i}" for i in range(metadata["n_features"])]
-    df_train = pd.DataFrame(X_train, columns=feature_names)
+    # Create DataFrames - excluding "sensitive" column from features
+    feature_names = [f"f{i}" for i in range(X_train.shape[1] - 1)]
+    df_train = pd.DataFrame(X_train[:, :-1], columns=feature_names)
     df_train["sensitive"] = s_train
-    df_test = pd.DataFrame(X_test, columns=feature_names)
+    df_test = pd.DataFrame(X_test[:, :-1], columns=feature_names)
     df_test["sensitive"] = s_test
 
-    # Run LaundryML
+    # Run LaundryML with many beta values for diverse Pareto front
     print(f"\nEnumerating {n_candidates} rule list candidates...")
+    # Use many more beta values for diversity
+    beta_values = [0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     laundry = LaundryML(black_box, "sensitive", fairness_metric="demographic_parity")
 
     candidates = laundry.enumerate_rule_lists(
         df_train, y_train,
-        beta_values=PAPER1_CONFIG["beta_range"],
+        beta_values=beta_values,
         n_models=n_candidates
     )
 
@@ -137,6 +142,21 @@ def run_experiment(dataset_name="adult_income", n_candidates=50):
     for i, c in enumerate(sorted_candidates):
         print(f"\nCandidate {i+1} (fidelity={c['fidelity']:.3f}, fairness={c['fairness_violation']:.3f}):")
         print(f"  {c['rule_list']}")
+
+    # Save candidates to CSV
+    csv_data = []
+    for c in candidates:
+        csv_data.append({
+            "fidelity": c["fidelity"],
+            "fairness_violation": c["fairness_violation"],
+            "accuracy": c["accuracy"],
+            "beta": c["beta"],
+            "objective": c["objective"],
+            "depth": c.get("depth", 0),
+        })
+    df_candidates = pd.DataFrame(csv_data)
+    df_candidates.to_csv("results/paper1_candidates.csv", index=False)
+    print(f"\nSaved {len(candidates)} candidates to results/paper1_candidates.csv")
 
     return {
         "candidates": candidates,

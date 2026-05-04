@@ -86,72 +86,52 @@ class TopKAttack(InterpretationAttack):
 
     def attack(self, x: torch.Tensor, explanation_method: str = "gradient") -> torch.Tensor:
         """
-        Generate adversarial perturbation.
-
-        Args:
-            x: Input image (1, C, H, W)
-            explanation_method: "gradient", "integrated_gradients", "deeplift"
-
-        Returns:
-            Perturbed image
+        Generate adversarial perturbation to decrease importance of top-k features.
         """
         x = x.to(self.device)
         original_class = self.model(x).argmax(dim=1).item()
 
-        # Get original explanation
-        if explanation_method == "gradient":
-            orig_exp = self.compute_gradient_explanation(x, original_class)
-        elif explanation_method == "integrated_gradients":
-            orig_exp = self.compute_integrated_gradients(x, original_class)
-        else:
-            orig_exp = self.compute_gradient_explanation(x, original_class)
-
-        # Find top-k features
-        flat_exp = orig_exp.abs().flatten()
-        top_k_indices = torch.argsort(flat_exp, descending=True)[:self.k]
-
-        # Initialize perturbation
-        delta = torch.zeros_like(x)
+        delta = torch.zeros_like(x).to(self.device)
         delta.requires_grad = True
 
-        best_delta = delta.clone()
+        best_delta = torch.zeros_like(x)
         best_dissimilarity = -float('inf')
 
         for i in range(self.n_iterations):
             x_perturbed = x + delta
             x_perturbed = torch.clamp(x_perturbed, 0, 1)
 
-            # Check prediction preserved
-            pred = self.model(x_perturbed).argmax(dim=1).item()
-            if pred != original_class:
-                continue
+            with torch.no_grad():
+                pred = self.model(x_perturbed).argmax(dim=1).item()
+                if pred != original_class:
+                    delta.grad = None
+                    continue
 
-            # Compute perturbed explanation
-            if explanation_method == "gradient":
-                pert_exp = self.compute_gradient_explanation(x_perturbed, original_class)
-            else:
-                pert_exp = self.compute_gradient_explanation(x_perturbed, original_class)
+            x_perturbed.requires_grad_(True)
+            output = self.model(x_perturbed)
+            score = output[:, original_class].sum()
 
-            # Dissimilarity: negative sum of top-k features in perturbed
-            flat_pert = pert_exp.abs().flatten()
+            grad = torch.autograd.grad(score, x_perturbed, create_graph=True)[0]
+
+            flat_pert = grad.abs().flatten()
+            top_k_indices = torch.argsort(flat_pert, descending=True)[:self.k]
             dissimilarity = -flat_pert[top_k_indices].sum()
 
             if dissimilarity > best_dissimilarity:
                 best_dissimilarity = dissimilarity
                 best_delta = delta.detach().clone()
 
-            # Gradient step
-            if delta.grad is not None:
-                delta.grad.zero_()
-
             dissimilarity.backward()
 
-            with torch.no_grad():
-                delta.data = delta.data + self.step_size * delta.grad.sign()
-                delta.data = self.clip_perturbation(delta.data)
-                delta.data = torch.clamp(x + delta.data, 0, 1) - x
+            if delta.grad is not None:
+                with torch.no_grad():
+                    delta.data = delta.data + self.step_size * delta.grad.sign()
+                    delta.data = torch.clamp(delta.data, -self.epsilon, self.epsilon)
+                    delta.data = torch.clamp(x + delta.data, 0, 1) - x
 
             delta.requires_grad = True
+            if delta.grad is not None:
+                delta.grad.zero_()
 
         return torch.clamp(x + best_delta, 0, 1)
 

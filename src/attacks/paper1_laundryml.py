@@ -50,19 +50,31 @@ class RuleList:
         return np.array(predictions)
 
     def _evaluate_condition(self, condition: str, x: pd.Series) -> bool:
-        """Evaluate a condition on a data point."""
-        # Simple condition parser: "feature > value" or "feature <= value"
+        """Evaluate a condition on a data point. Supports compound AND conditions."""
         try:
-            if ">" in condition:
-                parts = condition.split(">")
-                feature = parts[0].strip()
-                value = float(parts[1].strip())
-                return x[feature] > value
-            elif "<=" in condition:
+            # Handle compound AND conditions
+            if " AND " in condition:
+                sub_conditions = condition.split(" AND ")
+                return all(self._evaluate_single_condition(sc.strip(), x)
+                           for sc in sub_conditions)
+            else:
+                return self._evaluate_single_condition(condition, x)
+        except:
+            return False
+
+    def _evaluate_single_condition(self, condition: str, x: pd.Series) -> bool:
+        """Evaluate a single condition like 'feature > value'."""
+        try:
+            if "<=" in condition:
                 parts = condition.split("<=")
                 feature = parts[0].strip()
                 value = float(parts[1].strip())
                 return x[feature] <= value
+            elif ">" in condition:
+                parts = condition.split(">")
+                feature = parts[0].strip()
+                value = float(parts[1].strip())
+                return x[feature] > value
             elif "==" in condition:
                 parts = condition.split("==")
                 feature = parts[0].strip()
@@ -190,25 +202,57 @@ class LaundryML:
     def _enumerate_with_trees(self, X: pd.DataFrame, y: np.ndarray,
                              beta_values: List[float],
                              n_models: int) -> List[Dict]:
-        """Enumerate using DecisionTree fallback."""
+        """Enumerate using DecisionTree fallback with maximum diversity."""
         # Get black-box predictions
         bb_preds = self._get_black_box_predictions(X)
 
         candidates = []
+        n_per_beta = max(1, -(-n_models // len(beta_values)))  # Ceiling division
+
+        criteria = ["gini", "entropy"]
+        splitters = ["best", "random"]
 
         for beta in beta_values:
-            for i in range(n_models // len(beta_values)):
-                # Vary tree parameters to get diverse rule lists
-                depth = np.random.randint(2, self.max_depth + 1)
-                min_samples = np.random.randint(5, self.min_samples_leaf + 20)
+            for i in range(n_per_beta):
+                # Widely vary tree parameters
+                depth = np.random.randint(1, self.max_depth + 3)
+                min_samples = np.random.randint(2, 50)
+                max_features_options = [None, "sqrt", "log2",
+                                        max(1, int(0.3 * X.shape[1])),
+                                        max(1, int(0.5 * X.shape[1])),
+                                        max(1, int(0.7 * X.shape[1]))]
+                max_feat = max_features_options[i % len(max_features_options)]
+                criterion = criteria[i % len(criteria)]
+                splitter = splitters[(i // 2) % len(splitters)]
+
+                # Use beta to create sample weights that emphasize/
+                # de-emphasize sensitive-attribute-correlated samples
+                sensitive_col = self.sensitive_attr
+                if sensitive_col in X.columns:
+                    sensitive_vals = X[sensitive_col].values
+                    # beta > 0 → upweight minority group for fairer trees
+                    group_counts = np.bincount(sensitive_vals.astype(int))
+                    minority_group = np.argmin(group_counts)
+                    sample_weight = np.ones(len(X))
+                    if beta > 0:
+                        boost = 1.0 + beta * (2.0 + i * 0.1)
+                        sample_weight[sensitive_vals.astype(int) == minority_group] = boost
+                    # Also add small random noise to weights for diversity
+                    sample_weight *= (1.0 + np.random.randn(len(X)) * 0.05 * (i + 1))
+                    sample_weight = np.clip(sample_weight, 0.1, 10.0)
+                else:
+                    sample_weight = None
 
                 # Train decision tree on black-box predictions
                 dt = DecisionTreeClassifier(
                     max_depth=depth,
                     min_samples_leaf=min_samples,
-                    random_state=i
+                    max_features=max_feat,
+                    criterion=criterion,
+                    splitter=splitter,
+                    random_state=42 + i * 7 + int(beta * 100)
                 )
-                dt.fit(X, bb_preds)
+                dt.fit(X, bb_preds, sample_weight=sample_weight)
 
                 # Extract rule list
                 rule_list = self._tree_to_rule_list(dt, X.columns)
